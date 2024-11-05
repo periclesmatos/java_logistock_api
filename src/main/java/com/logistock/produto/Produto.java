@@ -1,10 +1,11 @@
 package com.logistock.produto;
 
+import com.logistock.preco.Preco;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity(name = "Produto")
 @Table(name = "produtos")
@@ -20,8 +21,12 @@ public class Produto {
     private String nome;
     private String descricao;
     private String categoria;
+    @Setter
     private double preco;
     private int quantidade;
+
+    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Preco> historicoDePreco = new ArrayList<>();
 
     public Produto(CadastrarProdutoDTO dados) {
         this.sku = dados.sku();
@@ -30,6 +35,9 @@ public class Produto {
         this.categoria = dados.categoria();
         this.preco = dados.preco();
         this.quantidade = dados.quantidade();
+
+        Preco precoInicial = new Preco(dados.preco(), this);
+        this.historicoDePreco.add(precoInicial);
     }
 
     public void atualizarInformacoes(AtualizarProdutoDTO dados) {

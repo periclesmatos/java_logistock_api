@@ -1,6 +1,9 @@
 package com.logistock.controller;
 
+import com.logistock.preco.AtualizarPrecoDTO;
+import com.logistock.preco.DetalharPrecoDTO;
 import com.logistock.produto.*;
+import com.logistock.service.ProdutoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,45 +15,50 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/produtos")
 public class ProdutoController {
 
     @Autowired
-    private ProdutoRepository repository;
+    private ProdutoService produtoService;
 
     @PostMapping
-    @Transactional
-    public ResponseEntity<DetalharProdutoDTO> cadastrarProduto(@RequestBody @Valid CadastrarProdutoDTO dados, UriComponentsBuilder uriComponentsBuilder) {
-        var produto = new Produto(dados);
-        repository.save(produto);
+    public ResponseEntity<ProdutoDTO> cadastrarProduto(@RequestBody @Valid CadastrarProdutoDTO dados, UriComponentsBuilder uriComponentsBuilder) {
+        var produto = produtoService.cadastrarProduto(dados);
         var uri = uriComponentsBuilder.path("produtos/{id}").buildAndExpand(produto.getId()).toUri();
-
-        return ResponseEntity.created(uri).body(new DetalharProdutoDTO(produto));
+        return ResponseEntity.created(uri).body(new ProdutoDTO(produto));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DetalharProdutoDTO> detalharProduto(@PathVariable Long id) {
-        var produto = repository.getReferenceById(id);
+        var produto = produtoService.buscarProduto(id);
+        List<DetalharPrecoDTO> historicoDePreco = produto.getHistoricoDePreco().stream()
+                .map(DetalharPrecoDTO::new)
+                .collect(Collectors.toList());
 
-        return ResponseEntity.ok(new DetalharProdutoDTO(produto));
+        DetalharProdutoDTO detalharProdutoDTO = new DetalharProdutoDTO(produto, historicoDePreco);
+        return ResponseEntity.ok(detalharProdutoDTO);
     }
 
     @GetMapping
     public ResponseEntity<Page<ListarProdutoDTO>> listarProdutos(@PageableDefault(size = 10, sort = {"nome"}) Pageable paginacao) {
-        var page = repository.findAll(paginacao).map(ListarProdutoDTO::new);
-
+        var page = produtoService.buscarProdutos(paginacao);
         return  ResponseEntity.ok(page);
     }
 
     @PutMapping
-    @Transactional
-    public ResponseEntity<DetalharProdutoDTO> atualizarProduto(@RequestBody @Valid AtualizarProdutoDTO dados) {
-        var produto = repository.getReferenceById(dados.id());
-        produto.atualizarInformacoes(dados);
+    public ResponseEntity<ProdutoDTO> atualizarProduto(@RequestBody @Valid AtualizarProdutoDTO dados) {
+        var produto = produtoService.atualizarProduto(dados);
+        return ResponseEntity.ok(new ProdutoDTO(produto));
+    }
 
-        return ResponseEntity.ok(new DetalharProdutoDTO(produto));
+    @PutMapping("/preco")
+    public  ResponseEntity<ProdutoDTO> atualizarPreco(@RequestBody @Valid AtualizarPrecoDTO dados) {
+        var produto = produtoService.atualizarPreco(dados);
+        return ResponseEntity.ok(new ProdutoDTO(produto));
     }
 
 }

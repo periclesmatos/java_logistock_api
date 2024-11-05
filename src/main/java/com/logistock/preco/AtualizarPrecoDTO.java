@@ -1,15 +1,16 @@
 package com.logistock.preco;
 
+
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
-public record CadastrarPrecoDTO(
+public record AtualizarPrecoDTO(
         @NotNull
-        int produtoId,
+        Long produtoId,
         @NotNull
         Double preco,
-        @NotNull
-        LocalDate dataInicio,
+        LocalDate dataInicial,
         LocalDate dataFinal
 ) {
 }
